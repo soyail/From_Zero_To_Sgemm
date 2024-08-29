@@ -51,7 +51,8 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
         __syncthreads();
 
         A += BK;
-        B += BK*m; 
+        B += BK*n; 
+        
         for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
             // load into register.
             for(uint i=0; i<TM; i++){
@@ -65,10 +66,10 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
                     threadResults[resIdxM*TN+resIdxN] += regA[resIdxM]*regB[resIdxN];
                 }
             }
-            __syncthreads();
         }
-        
+        __syncthreads();
     }
+
     for(uint resIdxM=0; resIdxM<TM; ++resIdxM){
         for(uint resIdxN=0; resIdxN < TN; resIdxN+=4){
             // load C vector into registers

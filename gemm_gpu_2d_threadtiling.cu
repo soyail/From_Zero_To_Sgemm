@@ -68,8 +68,9 @@ __global__ void gemm_gpu_2d_threadtiling_kernel(
                     threadResults[resIdxM*TN+resIdxN] += regA[resIdxM]*regB[resIdxN];
                 }
             }
-            __syncthreads();
         }
+        __syncthreads();
+
         
     }
     for(uint resIdxM=0; resIdxM < TM; resIdxM++){

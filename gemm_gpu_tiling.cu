@@ -35,6 +35,7 @@ __global__ void gemm_gpu_tiling_kernel(
         }
         __syncthreads();
     }
+
     C[threadIdx.y*n+threadIdx.x] = alpha*tmp+beta*C[threadIdx.y*n+threadIdx.x];
 }
 
