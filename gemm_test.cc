@@ -17,6 +17,7 @@
 #include "gemm_gpu_2d_threadtiling.h"
 #include "gemm_gpu_vectorized_mem.h"
 #include "gemm_gpu_doublebuffer.h"
+#include "gemm_gpu_doublebuffer_sm2reg.h"
 
 typedef void (*gemm_impl_t)(
 	const int m, 
@@ -44,7 +45,8 @@ std::vector<GemmImpl> gemm_impls = {
     // {"gpu_1d_threadtiling", gemm_gpu_1d_threadtiling},
     {"gpu_2d_threadtiling", gemm_gpu_2d_threadtiling},
     {"gpu_vectorized_memory", gemm_gpu_vectorized_memory},
-    {"gpu_doublebuffer", gemm_gpu_doublebuffer}
+    {"gpu_doublebuffer_gm2sm", gemm_gpu_doublebuffer_gm2sm},
+    {"gpu_doublebuffer_sm2reg", gemm_gpu_doublebuffer_sm2reg}
 };
 
 constexpr int BENCHMARK_ROUNDS = 50;
