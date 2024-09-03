@@ -52,9 +52,17 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
 
         A += BK;
         B += BK*n; 
-        
+
         for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
             // load into register.
+            // reinterpret_cast<float4 *>(&regA[0])[0] = 
+            //     reinterpret_cast<float4 *>(&shareA[dotIdx*BM+threadRow])[0];
+            // reinterpret_cast<float4 *>(&regA[4])[0] = 
+            //     reinterpret_cast<float4 *>(&shareA[dotIdx*BM+threadRow+4])[0];
+            // reinterpret_cast<float4 *>(&regB[0])[0] = 
+            //     reinterpret_cast<float4 *>(&shareB[dotIdx*BM+threadRow])[0];
+            // reinterpret_cast<float4 *>(&regB[4])[0] = 
+            //     reinterpret_cast<float4 *>(&shareB[dotIdx*BM+threadRow+4])[0];
             for(uint i=0; i<TM; i++){
                 regA[i] = shareA[dotIdx*BM+threadRow+i];
             }

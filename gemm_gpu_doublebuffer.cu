@@ -52,12 +52,14 @@ __global__ void gemm_gpu_doublebuffer_kernel(
 
     // must wait all threads complete.
     __syncthreads();
+
     int write_matrix_idx = 1;
+
     A += BK;
     B += BK*m; 
+
     for(uint tile_idx = BK; tile_idx < k; tile_idx += BK){
         // load next tile from global memory(GMEM to temp register).
-        
         float4 tmp =
             reinterpret_cast<float4 *>(&A[innerRowA * k + innerColA * 4])[0];
         shareA[write_matrix_idx*BM*BK+(innerColA * 4 + 0) * BM + innerRowA] = tmp.x;
@@ -123,7 +125,7 @@ __global__ void gemm_gpu_doublebuffer_kernel(
 
 }
 
-void gemm_gpu_doublebuffer(
+void gemm_gpu_doublebuffer_gm2sm(
     const int m, 
     const int n, 
     const int k,
@@ -144,3 +146,4 @@ void gemm_gpu_doublebuffer(
     dim3 block_dim = dim3(BN*BM/(TM*TN));
     gemm_gpu_doublebuffer_kernel<BM, BN, BK, TM, TN><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+
