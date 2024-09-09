@@ -1,5 +1,4 @@
 #include <cublas_v2.h>
-
 void gemm_gpu_mem_coalesce(
     const int m, 
     const int n, 

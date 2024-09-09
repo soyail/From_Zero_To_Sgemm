@@ -33,21 +33,31 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
     C += blockIdx.x * BM * n + blockIdx.y * BN;
 
     // calculating the indices that this thread will load into SMEM
+    // because we use float4 here.
     const uint innerRowA = threadIdx.x / (BK/4); 
     const uint innerColA = threadIdx.x % (BK/4); 
     const uint innerRowB = threadIdx.x / (BN/4); 
     const uint innerColB = threadIdx.x % (BN/4);
 
-    for(uint tile_idx = 0; tile_idx < k; tile_idx += BK){
-        float4 tmp =
-            reinterpret_cast<float4 *>(&A[innerRowA * k + innerColA * 4])[0];
-        shareA[(innerColA * 4 + 0) * BM + innerRowA] = tmp.x;
-        shareA[(innerColA * 4 + 1) * BM + innerRowA] = tmp.y;
-        shareA[(innerColA * 4 + 2) * BM + innerRowA] = tmp.z;
-        shareA[(innerColA * 4 + 3) * BM + innerRowA] = tmp.w;
-        reinterpret_cast<float4 *>(&shareB[innerRowB * BN + innerColB * 4])[0] =
-            reinterpret_cast<float4 *>(&B[innerRowB * n + innerColB * 4])[0];
+    int threadNumsPerBlock = BM * BN / (TM*TN);
+    int strideA = threadNumsPerBlock/(BK/4);
+    int strideB = threadNumsPerBlock/(BN/4);
 
+    for(uint tile_idx = 0; tile_idx < k; tile_idx += BK){
+        //shareA tile: BM * BK, every thread need to load BK *TM *TN/ BN = 8.
+        for(uint loadoffset = 0; loadoffset < BM; loadoffset+=strideA){
+            float4 tmp =
+                reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k + innerColA*4])[0];
+            shareA[(innerColA * 4 + 0) * BM + innerRowA + loadoffset] = tmp.x;
+            shareA[(innerColA * 4 + 1) * BM + innerRowA + loadoffset] = tmp.y;
+            shareA[(innerColA * 4 + 2) * BM + innerRowA + loadoffset] = tmp.z;
+            shareA[(innerColA * 4 + 3) * BM + innerRowA + loadoffset] = tmp.w;
+        }
+        for(uint loadoffset = 0; loadoffset < BK; loadoffset+=strideB){
+            reinterpret_cast<float4 *>(&shareB[(innerRowB+loadoffset)*BN + innerColB*4])[0] =
+                reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB * 4])[0];
+        }
+        
         __syncthreads();
 
         A += BK;
@@ -55,14 +65,6 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
 
         for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
             // load into register.
-            // reinterpret_cast<float4 *>(&regA[0])[0] = 
-            //     reinterpret_cast<float4 *>(&shareA[dotIdx*BM+threadRow])[0];
-            // reinterpret_cast<float4 *>(&regA[4])[0] = 
-            //     reinterpret_cast<float4 *>(&shareA[dotIdx*BM+threadRow+4])[0];
-            // reinterpret_cast<float4 *>(&regB[0])[0] = 
-            //     reinterpret_cast<float4 *>(&shareB[dotIdx*BM+threadRow])[0];
-            // reinterpret_cast<float4 *>(&regB[4])[0] = 
-            //     reinterpret_cast<float4 *>(&shareB[dotIdx*BM+threadRow+4])[0];
             for(uint i=0; i<TM; i++){
                 regA[i] = shareA[dotIdx*BM+threadRow+i];
             }
@@ -106,12 +108,18 @@ void gemm_gpu_vectorized_memory(
     float *C,
     cublasHandle_t handle
 ){
-    const int BM = 128;
-    const int BN = 128;
-    const int BK = 8;
+    const int BM = 64;
+    const int BN = 64;
+    const int BK = 16;
     const int TM = 8;
-    const int TN = 8;
-
+    const int TN = 4;
+    // another param
+    // const int BM = 64;
+    // const int BN = 64;
+    // const int BK = 4;
+    // const int TM = 8;
+    // const int TN = 8;
+    // block num 
     dim3 grid_dim = dim3(ceil(m/BM), ceil(n/BN));
     dim3 block_dim = dim3(BN*BM/(TM*TN));
     gemm_gpu_vectorized_mem_kernel<BM, BN, BK, TM, TN><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);

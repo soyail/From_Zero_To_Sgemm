@@ -20,8 +20,8 @@ int main() {
         }
 
         std::cout << "Device " << dev << ": " << deviceProp.name << std::endl;
-        std::cout << "  Total global memory: " << deviceProp.totalGlobalMem << " bytes" << std::endl;
-        std::cout << "  Shared memory per block: " << deviceProp.sharedMemPerBlock << " bytes" << std::endl;
+        std::cout << "  Total global memory: " << deviceProp.totalGlobalMem/1024 << " kbytes" << std::endl;
+        std::cout << "  Shared memory per block: " << deviceProp.sharedMemPerBlock/1024 << " kbytes" << std::endl;
         std::cout << "  Registers per block: " << deviceProp.regsPerBlock << std::endl;
         std::cout << "  Warp size: " << deviceProp.warpSize << std::endl;
         std::cout << "  Max threads per block: " << deviceProp.maxThreadsPerBlock << std::endl;
@@ -36,6 +36,7 @@ int main() {
         std::cout << "  Memory clock rate: " << deviceProp.memoryClockRate << " kHz" << std::endl;
         std::cout << "  Memory bus width: " << deviceProp.memoryBusWidth << " bits" << std::endl;
         std::cout << "  L2 cache size: " << deviceProp.l2CacheSize << " bytes" << std::endl;
+        std::cout << "  Max Thread Per SM: " << deviceProp.maxThreadsPerMultiProcessor << std::endl;
         std::cout << "  Maximum texture dimension size (1D): " << deviceProp.maxTexture1D << std::endl;
         std::cout << "  Maximum texture dimension size (2D): (" << deviceProp.maxTexture2D[0] << ", "
                   << deviceProp.maxTexture2D[1] << ")" << std::endl;

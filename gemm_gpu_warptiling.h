@@ -1,5 +1,6 @@
 #include <cublas_v2.h>
-void gemm_gpu_naive(
+
+void gemm_gpu_warptiling(
     const int m, 
     const int n, 
     const int k,

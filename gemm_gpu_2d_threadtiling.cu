@@ -74,6 +74,14 @@ __global__ void gemm_gpu_2d_threadtiling_kernel(
     for(uint resIdxM=0; resIdxM < TM; resIdxM++){
         for(uint resIdxN=0; resIdxN<TN; resIdxN++){
             C[(threadRow+resIdxM)*n+threadCol+resIdxN] = threadResults[resIdxM*TN+resIdxN];
+            // float4 tmp = reinterpret_cast<float4 *>(
+            //     &C[(threadRow + resIdxM) * n + threadCol + resIdxN])[0];
+            // tmp.x = threadResults[resIdxM*TN + resIdxN];
+            // tmp.y = threadResults[resIdxM*TN + resIdxN+1];
+            // tmp.z = threadResults[resIdxM*TN + resIdxN+2];
+            // tmp.w = threadResults[resIdxM*TN + resIdxN+3];
+            // reinterpret_cast<float4 *>(
+            //     &C[(threadRow + resIdxM) * m + threadCol + resIdxN])[0] = tmp;
         }
     }
 
@@ -94,7 +102,12 @@ void gemm_gpu_2d_threadtiling(
     const int BN = 128;
     const int BK = 8;
     const int TM = 8;
-    const int TN = 8;
+    const int TN = 4;
+    // const int BM = 64;
+    // const int BN = 64;
+    // const int BK = 16;
+    // const int TM = 8;
+    // const int TN = 4;
 
     dim3 grid_dim = dim3(ceil(m/BM), ceil(n/BN));
     dim3 block_dim = dim3(BN*BM/(TM*TN));
