@@ -98,16 +98,16 @@ void gemm_gpu_2d_threadtiling(
     float *C,
     cublasHandle_t handle
 ){
-    const int BM = 128;
-    const int BN = 128;
-    const int BK = 8;
-    const int TM = 8;
-    const int TN = 4;
-    // const int BM = 64;
-    // const int BN = 64;
-    // const int BK = 16;
+    // const int BM = 128;
+    // const int BN = 128;
+    // const int BK = 8;
     // const int TM = 8;
     // const int TN = 4;
+    const int BM = 64;
+    const int BN = 64;
+    const int BK = 16;
+    const int TM = 8;
+    const int TN = 4;
 
     dim3 grid_dim = dim3(ceil(m/BM), ceil(n/BN));
     dim3 block_dim = dim3(BN*BM/(TM*TN));

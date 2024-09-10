@@ -69,8 +69,9 @@ __global__ void gemm_gpu_bank_conflict_kernel(
             for(uint i=0; i<TM; i++){
                 regA[i] = shareA[(threadRow+i)*BK+dotIdx];
             }
-            for(uint i=0; i<TN; i++){
-                regB[i] = shareB[dotIdx*BN+threadCol+i];
+            for(uint i=0; i<TN; i+=4){
+                reinterpret_cast<float4 *>(&regB[i])[0] = 
+                    reinterpret_cast<float4 *>(&shareB[dotIdx*BN+threadCol+i])[0];
             }
             for(uint resIdxM=0; resIdxM < TM; resIdxM++){
                 for(uint resIdxN=0; resIdxN<TN; resIdxN++){
@@ -112,8 +113,8 @@ void gemm_gpu_bank_conflict(
     const int BM = 64;
     const int BN = 64;
     const int BK = 16;
-    const int TM = 4;
-    const int TN = 8;
+    const int TM = 8;
+    const int TN = 4;
     // another param
     // const int BM = 64;
     // const int BN = 64;

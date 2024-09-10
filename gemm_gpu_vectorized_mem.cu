@@ -16,7 +16,8 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
     float *C
 ){
     //share memory.
-    __shared__ float shareA[BM*BK];
+    //__shared__ float shareA[BM*(BK+1)];
+    __shared__ float shareA[BK][BM+1];
     __shared__ float shareB[BK*BN];
 
     // use register to store result.
@@ -48,14 +49,18 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
         for(uint loadoffset = 0; loadoffset < BM; loadoffset+=strideA){
             float4 tmp =
                 reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k + innerColA*4])[0];
-            shareA[(innerColA * 4 + 0) * BM + innerRowA + loadoffset] = tmp.x;
-            shareA[(innerColA * 4 + 1) * BM + innerRowA + loadoffset] = tmp.y;
-            shareA[(innerColA * 4 + 2) * BM + innerRowA + loadoffset] = tmp.z;
-            shareA[(innerColA * 4 + 3) * BM + innerRowA + loadoffset] = tmp.w;
+            // shareA[(innerColA * 4 + 0) * BM + innerRowA + loadoffset] = tmp.x;
+            // shareA[(innerColA * 4 + 1) * BM + innerRowA + loadoffset] = tmp.y;
+            // shareA[(innerColA * 4 + 2) * BM + innerRowA + loadoffset] = tmp.z;
+            // shareA[(innerColA * 4 + 3) * BM + innerRowA + loadoffset] = tmp.w;
+            shareA[(innerColA * 4 + 0)][innerRowA + loadoffset] = tmp.x;
+            shareA[(innerColA * 4 + 1)][innerRowA + loadoffset] = tmp.y;
+            shareA[(innerColA * 4 + 2)][innerRowA + loadoffset] = tmp.z;
+            shareA[(innerColA * 4 + 3)][innerRowA + loadoffset] = tmp.w;
         }
         for(uint loadoffset = 0; loadoffset < BK; loadoffset+=strideB){
             reinterpret_cast<float4 *>(&shareB[(innerRowB+loadoffset)*BN + innerColB*4])[0] =
-                reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB * 4])[0];
+                reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB*4])[0];
         }
         
         __syncthreads();
@@ -63,15 +68,24 @@ __global__ void gemm_gpu_vectorized_mem_kernel(
         A += BK;
         B += BK*n; 
 
+        #pragma unroll
         for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
             // load into register.
+            // for(uint i=0; i<TM; i+=4){
+            //     reinterpret_cast<float4 *>(&regA[i])[0] = 
+            //         reinterpret_cast<float4 *>(&shareA[dotIdx][threadRow+i])[0];
+            //         //reinterpret_cast<float4 *>(&shareA[dotIdx*BM+threadRow+i])[0];
+            // }
             for(uint i=0; i<TM; i++){
-                regA[i] = shareA[dotIdx*BM+threadRow+i];
+                regA[i] = shareA[dotIdx][threadRow+i];
             }
-            for(uint i=0; i<TN; i++){
-                regB[i] = shareB[dotIdx*BM+threadCol+i];
+            for(uint i=0; i<TN; i+=4){
+                reinterpret_cast<float4 *>(&regB[i])[0] = 
+                    reinterpret_cast<float4 *>(&shareB[dotIdx*BN+threadCol+i])[0];
             }
+            #pragma unroll
             for(uint resIdxM=0; resIdxM < TM; resIdxM++){
+                #pragma unroll
                 for(uint resIdxN=0; resIdxN<TN; resIdxN++){
                     threadResults[resIdxM*TN+resIdxN] += regA[resIdxM]*regB[resIdxN];
                 }

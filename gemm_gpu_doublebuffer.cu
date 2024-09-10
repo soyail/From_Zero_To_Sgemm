@@ -16,7 +16,8 @@ __global__ void gemm_gpu_doublebuffer_kernel(
     float *C
 ){
     //share memory.
-    __shared__ float shareA[2*BM*BK];
+    // avoid bank conflict.
+    __shared__ float shareA[2*BM*(BK+1)];
     __shared__ float shareB[2*BK*BN];
 
     // use register to store result.
@@ -46,16 +47,19 @@ __global__ void gemm_gpu_doublebuffer_kernel(
 
     // load the first tile of shareA,shareB from GMEM to SMEM.
     for(uint loadoffset = 0; loadoffset < BM; loadoffset+=strideA){
-        float4 tmp =
-            reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k + innerColA*4])[0];
-        shareA[(innerColA * 4 + 0) * BM + innerRowA+loadoffset] = tmp.x;
-        shareA[(innerColA * 4 + 1) * BM + innerRowA+loadoffset] = tmp.y;
-        shareA[(innerColA * 4 + 2) * BM + innerRowA+loadoffset] = tmp.z;
-        shareA[(innerColA * 4 + 3) * BM + innerRowA+loadoffset] = tmp.w;
+        // transpose shareA.
+        // float4 tmp =
+        //     reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k + innerColA*4])[0];
+        // shareA[(innerColA * 4 + 0) * BM + innerRowA+loadoffset] = tmp.x;
+        // shareA[(innerColA * 4 + 1) * BM + innerRowA+loadoffset] = tmp.y;
+        // shareA[(innerColA * 4 + 2) * BM + innerRowA+loadoffset] = tmp.z;
+        // shareA[(innerColA * 4 + 3) * BM + innerRowA+loadoffset] = tmp.w;
+        reinterpret_cast<float4 *>(&shareA[(innerRowA+loadoffset)*BK+innerColA*4])[0] = 
+            reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k+innerColA*4])[0];
     }
     for(uint loadoffset = 0; loadoffset < BK; loadoffset+=strideB){
         reinterpret_cast<float4 *>(&shareB[(innerRowB+loadoffset)*BN + innerColB*4])[0] =
-            reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB * 4])[0];
+            reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB*4])[0];
     }
         
     // must wait all threads complete.
@@ -64,22 +68,22 @@ __global__ void gemm_gpu_doublebuffer_kernel(
     int offset = 1;
 
     A += BK;
-    B += BK*m; 
+    B += BK*n; 
 
     for(uint tile_idx = BK; tile_idx < k; tile_idx += BK){
         // load next tile from global memory(GMEM to temp register).
         for(uint loadoffset = 0; loadoffset < BM; loadoffset+=strideA){
             // float4 tmp =
             //     reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k + innerColA*4])[0];
-            // shareA[(innerColA * 4 + 0) * BM + innerRowA+loadoffset] = tmp.x;
-            // shareA[(innerColA * 4 + 1) * BM + innerRowA+loadoffset] = tmp.y;
-            // shareA[(innerColA * 4 + 2) * BM + innerRowA+loadoffset] = tmp.z;
-            // shareA[(innerColA * 4 + 3) * BM + innerRowA+loadoffset] = tmp.w;
-            reinterpret_cast<float4 *>(&shareA[(innerRowA+loadoffset)*BK+innerColA*4])[0] = 
+            // shareA[offset*BM*BK+(innerColA * 4 + 0) * BM + innerRowA+loadoffset] = tmp.x;
+            // shareA[offset*BM*BK+(innerColA * 4 + 1) * BM + innerRowA+loadoffset] = tmp.y;
+            // shareA[offset*BM*BK+(innerColA * 4 + 2) * BM + innerRowA+loadoffset] = tmp.z;
+            // shareA[offset*BM*BK+(innerColA * 4 + 3) * BM + innerRowA+loadoffset] = tmp.w;
+            reinterpret_cast<float4 *>(&shareA[offset*BM*BK+(innerRowA+loadoffset)*BK+innerColA*4])[0] = 
                 reinterpret_cast<float4 *>(&A[(innerRowA+loadoffset)*k+innerColA*4])[0];
         }
         for(uint loadoffset = 0; loadoffset < BK; loadoffset+=strideB){
-            reinterpret_cast<float4 *>(&shareB[(innerRowB+loadoffset)*BN + innerColB*4])[0] =
+            reinterpret_cast<float4 *>(&shareB[offset*BN*BK+(innerRowB+loadoffset)*BN + innerColB*4])[0] =
                 reinterpret_cast<float4 *>(&B[(innerRowB+loadoffset)*n + innerColB * 4])[0];
         }
 
@@ -91,11 +95,13 @@ __global__ void gemm_gpu_doublebuffer_kernel(
         for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
             // load into register.
             for(uint i=0; i<TM; i++){
-                //regA[i] = shareA[offset*BM*BK+dotIdx*BM+threadRow+i];
                 regA[i] = shareA[offset*BM*BK+(threadRow+i)*BK+dotIdx];
+                // reinterpret_cast<float4 *>(&regA[i])[0] = 
+                //     reinterpret_cast<float4 *>(&shareA[offset*BM*BK+dotIdx*BM+threadRow+i])[0];
             }
-            for(uint i=0; i<TN; i++){
-                regB[i] = shareB[offset*BK*BN+dotIdx*BM+threadCol+i];
+            for(uint i=0; i<TN; i+=4){
+                reinterpret_cast<float4 *>(&regB[i])[0] = 
+                    reinterpret_cast<float4 *>(&shareB[offset*BK*BN+dotIdx*BN+threadCol+i])[0];
             }
             for(uint resIdxM=0; resIdxM < TM; resIdxM++){
                 for(uint resIdxN=0; resIdxN<TN; resIdxN++){
@@ -111,10 +117,13 @@ __global__ void gemm_gpu_doublebuffer_kernel(
     for(uint dotIdx = 0; dotIdx < BK; dotIdx++){                             
         // load into register.
         for(uint i=0; i<TM; i++){
-            regA[i] = shareA[offset*BM*BK+dotIdx*BM+threadRow+i];
+            regA[i] = shareA[offset*BM*BK+(threadRow+i)*BK+dotIdx];
+            // reinterpret_cast<float4 *>(&regA[i])[0] = 
+            //     reinterpret_cast<float4 *>(&shareA[offset*BM*BK+dotIdx*BM+threadRow+i])[0];
         }
         for(uint i=0; i<TN; i++){
-            regB[i] = shareB[offset*BK*BN+dotIdx*BM+threadCol+i];
+            reinterpret_cast<float4 *>(&regB[i])[0] = 
+                reinterpret_cast<float4 *>(&shareB[offset*BK*BN+dotIdx*BN+threadCol+i])[0];
         }
         for(uint resIdxM=0; resIdxM < TM; resIdxM++){
             for(uint resIdxN=0; resIdxN<TN; resIdxN++){

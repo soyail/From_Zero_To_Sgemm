@@ -48,8 +48,8 @@ std::vector<GemmImpl> gemm_impls = {
     {"gpu_2d_threadtiling", gemm_gpu_2d_threadtiling},
     {"gpu_vectorized_memory", gemm_gpu_vectorized_memory},
     {"gpu_bank_conflict", gemm_gpu_bank_conflict},
-    {"gpu_warptiling", gemm_gpu_warptiling}
-    // {"gpu_doublebuffer_gm2sm", gemm_gpu_doublebuffer_gm2sm},
+    {"gpu_warptiling", gemm_gpu_warptiling},
+    {"gpu_doublebuffer_gm2sm", gemm_gpu_doublebuffer_gm2sm}
     // {"gpu_doublebuffer_sm2reg", gemm_gpu_doublebuffer_sm2reg}
 };
 
