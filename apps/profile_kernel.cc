@@ -18,8 +18,6 @@
 #include "gemm_gpu_vectorized_mem.cuh"
 #include "gemm_gpu_bank_conflict.cuh"
 #include "gemm_gpu_warptiling.cuh"
-#include "gemm_gpu_doublebuffer.cuh"
-#include "gemm_gpu_doublebuffer_sm2reg.cuh"
 
 
 
@@ -50,12 +48,6 @@ void run_kernel(int kernel_idx, int m, int n, int k, float* A, float alpha, floa
         break;
     case 7:
         gemm_gpu_warptiling(m,n,k,A,alpha,B,beta,C,handle);
-        break;
-    case 8:
-        gemm_gpu_doublebuffer_gm2sm(m,n,k,A,alpha,B,beta,C,handle);
-        break;
-    case 9:
-        gemm_gpu_doublebuffer_sm2reg(m,n,k,A,alpha,B,beta,C,handle);
         break;
     
     default:

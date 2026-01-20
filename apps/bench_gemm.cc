@@ -11,8 +11,6 @@
 
 #include "gemm_gpu_bank_conflict.cuh"
 #include "gemm_gpu_cublas.cuh"
-#include "gemm_gpu_doublebuffer.cuh"
-#include "gemm_gpu_doublebuffer_sm2reg.cuh"
 #include "gemm_gpu_mem_coalesce.cuh"
 #include "gemm_gpu_naive.cuh"
 #include "gemm_gpu_tiling.cuh"
@@ -45,8 +43,6 @@ std::vector<GemmImpl> gemm_impls = {
     {"gpu_vectorized_memory", gemm_gpu_vectorized_memory},
     {"gpu_bank_conflict", gemm_gpu_bank_conflict},
     {"gpu_warptiling", gemm_gpu_warptiling},
-    {"gpu_doublebuffer_gm2sm", gemm_gpu_doublebuffer_gm2sm},
-    {"gpu_doublebuffer_sm2reg", gemm_gpu_doublebuffer_sm2reg},
 };
 
 static std::vector<int> parse_k_list(const std::string &list) {

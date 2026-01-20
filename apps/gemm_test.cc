@@ -18,8 +18,6 @@
 #include "gemm_gpu_vectorized_mem.cuh"
 #include "gemm_gpu_bank_conflict.cuh"
 #include "gemm_gpu_warptiling.cuh"
-#include "gemm_gpu_doublebuffer.cuh"
-#include "gemm_gpu_doublebuffer_sm2reg.cuh"
 
 typedef void (*gemm_impl_t)(
 	const int m, 
@@ -49,13 +47,15 @@ std::vector<GemmImpl> gemm_impls = {
     {"gpu_vectorized_memory", gemm_gpu_vectorized_memory},
     {"gpu_bank_conflict", gemm_gpu_bank_conflict},
     {"gpu_warptiling", gemm_gpu_warptiling},
-    {"gpu_doublebuffer_gm2sm", gemm_gpu_doublebuffer_gm2sm}
-    // {"gpu_doublebuffer_sm2reg", gemm_gpu_doublebuffer_sm2reg}
 };
 
 constexpr int BENCHMARK_ROUNDS = 50;
 
 int main(int argc, char* argv[]){
+    if (argc < 4) {
+        std::cerr << "Usage: " << argv[0] << " m n k" << std::endl;
+        return 1;
+    }
     int m = atoi(argv[1]);
 	int n = atoi(argv[2]);
 	int k = atoi(argv[3]);
@@ -127,14 +127,15 @@ int main(int argc, char* argv[]){
         cudaEventRecord(end,0);
         cudaEventSynchronize(end);
         cudaEventElapsedTime(&elapsed_time, start, end);
-        long flops = 2*m*n*k;
+        double flops = 2.0 * m * n * k;
+        double gflops = (BENCHMARK_ROUNDS * flops * 1e-6) / elapsed_time;
         printf(
             "(%s): \n"
             "Average elapsed time: (%7.6f) ms, performance: (%7.1f) GFLOPS. size: "
             "(%ld).\n",
             gemm_impl.name.c_str(),
             elapsed_time / BENCHMARK_ROUNDS,
-            (BENCHMARK_ROUNDS * flops * 1e-9) / elapsed_time, m);
+            gflops, m);
     }
     
     
