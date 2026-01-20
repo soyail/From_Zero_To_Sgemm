@@ -1,7 +1,20 @@
 #pragma once
+#include <cublas_v2.h>
 
+void gemm_gpu_1d_threadtiling(
+    const int m, 
+    const int n, 
+    const int k,
+    const float *A,
+    float alpha,
+    const float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
+
+#ifdef GEMM_GPU_1D_THREADTILING_IMPLEMENTATION
 #include <cassert>
-#include "gemm_gpu_1d_threadtiling.h"
 
 
 template <const int BM, const int BN, const int BK, const int TM>
@@ -73,3 +86,4 @@ void gemm_gpu_1d_threadtiling(
     dim3 block_dim = dim3(BM*BN/TM);
     gemm_gpu_1d_threadtiling_kernel<BM, BN, BK, TM><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_1D_THREADTILING_IMPLEMENTATION

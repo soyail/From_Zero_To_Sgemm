@@ -1,23 +1,45 @@
 CXX = nvcc
-CXXFlAGS = --generate-line-info -arch=sm_89 -O3
+CUDA_ARCH := $(shell nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -n 1 | tr -d '.')
+CUDA_ARCH_FLAG := $(if $(CUDA_ARCH),-arch=sm_$(CUDA_ARCH),-arch=sm_70)
+CXXFlAGS = --generate-line-info $(CUDA_ARCH_FLAG) -O3 -Iinclude
+CXXFLAGS = $(CXXFlAGS)
 
 
-DEPS = gemm_gpu_cublas.h gemm_gpu_naive.h gemm_gpu_tiling.h gemm_gpu_mem_coalesce.h gemm_gpu_1d_threadtiling.h gemm_gpu_2d_threadtiling.h gemm_gpu_vectorized_mem.h gemm_gpu_bank_conflict.h gemm_gpu_warptiling.h gemm_gpu_doublebuffer.h gemm_gpu_doublebuffer_sm2reg.h
-OBJS = gemm_gpu_cublas.o gemm_gpu_naive.o gemm_gpu_tiling.o gemm_gpu_mem_coalesce.o gemm_gpu_1d_threadtiling.o gemm_gpu_2d_threadtiling.o gemm_gpu_vectorized_mem.o gemm_gpu_bank_conflict.o gemm_gpu_warptiling.o gemm_gpu_doublebuffer.o gemm_gpu_doublebuffer_sm2reg.o 
+SRC_DIR = src
+APP_DIR = apps
+INC_DIR = include
+
+DEPS = $(wildcard $(INC_DIR)/*.h $(INC_DIR)/*.cuh)
+SRC_CC = $(wildcard $(SRC_DIR)/*.cc)
+SRC_CU = $(wildcard $(SRC_DIR)/*.cu)
+OBJS = $(patsubst $(SRC_DIR)/%.cc,$(SRC_DIR)/%.o,$(SRC_CC)) \
+	$(patsubst $(SRC_DIR)/%.cu,$(SRC_DIR)/%.o,$(SRC_CU))
 
 
-%.o: %.cc $(DEPS)
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.cc $(DEPS)
 	$(CXX) -c $(CXXFlAGS) $< -o $@
 
-%.o: %.cu $(DEPS)
+$(SRC_DIR)/%.o: $(SRC_DIR)/%.cu $(DEPS)
+	$(CXX) -c $(CXXFlAGS) $< -o $@
+
+$(APP_DIR)/%.o: $(APP_DIR)/%.cc $(DEPS)
+	$(CXX) -c $(CXXFlAGS) $< -o $@
+
+$(APP_DIR)/%.o: $(APP_DIR)/%.cu $(DEPS)
 	$(CXX) -c $(CXXFlAGS) $< -o $@
 
 
-gemm_test: $(OBJS) gemm_test.o
+gemm_test: $(OBJS) $(APP_DIR)/gemm_test.o
 	$(CXX) $(CXXFLAGS) -lcublas $^ -o gemm_test
 
-profile_kernel: $(OBJS) profile_kernel.o
-	$(CXX) $(CXXFLAGS) -arch=sm_89 -lcublas $^ -o profile_kernel
+bench_gemm: $(OBJS) $(APP_DIR)/bench_gemm.o
+	$(CXX) $(CXXFLAGS) -lcublas $^ -o bench_gemm
+
+profile_kernel: $(OBJS) $(APP_DIR)/profile_kernel.o
+	$(CXX) $(CXXFLAGS) -lcublas $^ -o profile_kernel
+
+query_gpu_properties: $(APP_DIR)/query_gpu_properties.o
+	$(CXX) $(CXXFLAGS) $^ -o query_gpu_properties
 
 clean:
-	rm -f *.o gemm_test profile_kernel
+	rm -f $(SRC_DIR)/*.o $(APP_DIR)/*.o gemm_test bench_gemm profile_kernel query_gpu_properties

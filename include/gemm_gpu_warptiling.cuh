@@ -1,8 +1,19 @@
 #pragma once
+#include <cublas_v2.h>
 
+void gemm_gpu_warptiling(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
 
-#include "gemm_gpu_warptiling.h"
-
+#ifdef GEMM_GPU_WARPTILING_IMPLEMENTATION
 const int WARPSIZE = 32;
 
 template <const int BM, const int BN, const int BK, const int WM, const int WN, const int WNITER, const int TM, const int TN, const int NUM_THREADS>
@@ -157,3 +168,4 @@ void gemm_gpu_warptiling(
     dim3 block_dim = dim3(NUM_THREADS);
     gemm_gpu_warptiling_kernel<BM, BN, BK, WM, WN, WNITER, TM, TN, NUM_THREADS><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_WARPTILING_IMPLEMENTATION

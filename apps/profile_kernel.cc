@@ -9,17 +9,17 @@
 #include <functional>
 #include <cublas_v2.h>
 
-#include "gemm_gpu_cublas.h"
-#include "gemm_gpu_naive.h"
-#include "gemm_gpu_mem_coalesce.h"
-#include "gemm_gpu_tiling.h"
-// #include "gemm_gpu_1d_threadtiling.h"
-#include "gemm_gpu_2d_threadtiling.h"
-#include "gemm_gpu_vectorized_mem.h"
-#include "gemm_gpu_bank_conflict.h"
-#include "gemm_gpu_warptiling.h"
-#include "gemm_gpu_doublebuffer.h"
-#include "gemm_gpu_doublebuffer_sm2reg.h"
+#include "gemm_gpu_cublas.cuh"
+#include "gemm_gpu_naive.cuh"
+#include "gemm_gpu_mem_coalesce.cuh"
+#include "gemm_gpu_tiling.cuh"
+// #include "gemm_gpu_1d_threadtiling.cuh"
+#include "gemm_gpu_2d_threadtiling.cuh"
+#include "gemm_gpu_vectorized_mem.cuh"
+#include "gemm_gpu_bank_conflict.cuh"
+#include "gemm_gpu_warptiling.cuh"
+#include "gemm_gpu_doublebuffer.cuh"
+#include "gemm_gpu_doublebuffer_sm2reg.cuh"
 
 
 

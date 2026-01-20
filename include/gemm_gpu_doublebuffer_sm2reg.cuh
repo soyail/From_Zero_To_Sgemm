@@ -1,5 +1,19 @@
-#include "gemm_gpu_doublebuffer_sm2reg.h"
+#pragma once
+#include <cublas_v2.h>
 
+void gemm_gpu_doublebuffer_sm2reg(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
+
+#ifdef GEMM_GPU_DOUBLEBUFFER_SM2REG_IMPLEMENTATION
 template <const int BM, const int BN, const int BK, const int TM, const int TN>
 __global__ void gemm_gpu_doublebuffer_sm2reg_kernel(
     const int m, 
@@ -128,3 +142,4 @@ void gemm_gpu_doublebuffer_sm2reg(
     dim3 block_dim = dim3(BN*BM/(TM*TN));
     gemm_gpu_doublebuffer_sm2reg_kernel<BM, BN, BK, TM, TN><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_DOUBLEBUFFER_SM2REG_IMPLEMENTATION

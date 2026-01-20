@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "gemm_gpu_doublebuffer.h"
+#include "gemm_gpu_doublebuffer.cuh"
 #include <cooperative_groups.h>
 #include <cuda/barrier>
 

@@ -1,9 +1,19 @@
 #pragma once
+#include <cublas_v2.h>
 
+void gemm_gpu_vectorized_memory(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
 
-#include "gemm_gpu_vectorized_mem.h"
-
-
+#ifdef GEMM_GPU_VECTORIZED_MEM_IMPLEMENTATION
 template <const int BM, const int BN, const int BK, const int TM, const int TN>
 __global__ void gemm_gpu_vectorized_mem_kernel(
     const int m, 
@@ -138,3 +148,4 @@ void gemm_gpu_vectorized_memory(
     dim3 block_dim = dim3(BN*BM/(TM*TN));
     gemm_gpu_vectorized_mem_kernel<BM, BN, BK, TM, TN><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_VECTORIZED_MEM_IMPLEMENTATION

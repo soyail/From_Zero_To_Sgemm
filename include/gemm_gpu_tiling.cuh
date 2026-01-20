@@ -1,7 +1,19 @@
 #pragma once
+#include <cublas_v2.h>
+void gemm_gpu_tiling(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
 
+#ifdef GEMM_GPU_TILING_IMPLEMENTATION
 #include <cassert>
-#include "gemm_gpu_tiling.h"
 
 
 template <const int BM, const int BN, const int BK>
@@ -57,3 +69,4 @@ void gemm_gpu_tiling(
     dim3 block_dim = dim3(BM, BN);
     gemm_gpu_tiling_kernel<BM,BN,BK><<<grid_dim, block_dim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_TILING_IMPLEMENTATION

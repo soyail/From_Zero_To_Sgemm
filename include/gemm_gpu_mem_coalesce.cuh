@@ -1,8 +1,18 @@
 #pragma once
+#include <cublas_v2.h>
+void gemm_gpu_mem_coalesce(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
 
-
-#include "gemm_gpu_mem_coalesce.h"
-
+#ifdef GEMM_GPU_MEM_COALESCE_IMPLEMENTATION
 __global__ void gemm_gpu_mem_coalesce_kernel(
     const int m, 
     const int n, 
@@ -41,3 +51,4 @@ void gemm_gpu_mem_coalesce(
     dim3 blockDim(32, 32);
     gemm_gpu_mem_coalesce_kernel<<<gridDim,blockDim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_MEM_COALESCE_IMPLEMENTATION

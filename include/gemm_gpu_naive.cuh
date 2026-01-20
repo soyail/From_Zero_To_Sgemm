@@ -1,6 +1,20 @@
+#pragma once
+#include <cublas_v2.h>
+void gemm_gpu_naive(
+    const int m, 
+    const int n, 
+    const int k,
+    float *A,
+    float alpha,
+    float *B,
+    float beta,
+    float *C,
+    cublasHandle_t handle
+);
+
+#ifdef GEMM_GPU_NAIVE_IMPLEMENTATION
 #include <cuda_runtime.h>
 #include <cmath>
-#include "gemm_gpu_naive.h"
 
 
 
@@ -42,3 +56,4 @@ void gemm_gpu_naive(
     dim3 blockDim(32, 32);
     gemm_gpu_naive_kernel<<<gridDim,blockDim>>>(m,n,k,A,alpha,B,beta,C);
 }
+#endif  // GEMM_GPU_NAIVE_IMPLEMENTATION

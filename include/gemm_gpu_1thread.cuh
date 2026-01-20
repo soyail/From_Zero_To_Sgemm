@@ -1,5 +1,16 @@
-#include "gemm_gpu_1thread.h"
+#pragma once
 
+
+void gemm_gpu_1thread(
+    float* __restrict__ C, 
+    float* __restrict__ A, 
+    float* __restrict__ B, 
+    const int n, 
+    const int m, 
+    const int k
+);
+
+#ifdef GEMM_GPU_1THREAD_IMPLEMENTATION
 __global__ void gemm_gpu_1thread_kernel(
     float* __restrict__ C, 
     float* __restrict__ A, 
@@ -28,5 +39,4 @@ void gemm_gpu_1thread(
 ){
     gemm_gpu_1thread_kernel<<<1,1>>>(C,A,B,n,m,k);
 }
-
-
+#endif  // GEMM_GPU_1THREAD_IMPLEMENTATION
